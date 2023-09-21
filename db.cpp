@@ -73,7 +73,7 @@ void mysql::clear_peer_data() {
 }
 
 void mysql::load_torrents(torrent_list &torrents) {
-	mysqlpp::Query query = conn.query("SELECT ID, info_hash, freetorrent, Snatched FROM torrents ORDER BY ID;");
+	mysqlpp::Query query = conn.query("SELECT id, info_hash, free, times_completed FROM torrents ORDER BY id;");
 	try {
 		mysqlpp::StoreQueryResult res = query.store();
 		std::unordered_set<std::string> cur_keys;
@@ -147,7 +147,7 @@ void mysql::load_torrents(torrent_list &torrents) {
 }
 
 void mysql::load_users(user_list &users) {
-	mysqlpp::Query query = conn.query("SELECT ID, can_leech, torrent_pass, (Visible='0' OR IP='127.0.0.1') AS Protected FROM users_main WHERE Enabled='1';");
+	mysqlpp::Query query = conn.query("SELECT id, can_leech, torrent_pass, (visible='0' OR IP='127.0.0.1') AS protected FROM users WHERE enabled='yes';");
 	try {
 		mysqlpp::StoreQueryResult res = query.store();
 		size_t num_rows = res.num_rows();
@@ -191,7 +191,7 @@ void mysql::load_users(user_list &users) {
 }
 
 void mysql::load_tokens(torrent_list &torrents) {
-	mysqlpp::Query query = conn.query("SELECT uf.UserID, t.info_hash FROM users_freeleeches AS uf JOIN torrents AS t ON t.ID = uf.TorrentID WHERE uf.Expired = '0';");
+	mysqlpp::Query query = conn.query("SELECT uf.uid, t.info_hash FROM users_freeleeches AS uf JOIN torrents AS t ON t.id = uf.tid WHERE uf.expired = '0';");
 	int token_count = 0;
 	try {
 		mysqlpp::StoreQueryResult res = query.store();
@@ -361,10 +361,10 @@ void mysql::flush_torrents() {
 	if (update_torrent_buffer == "") {
 		return;
 	}
-	sql = "INSERT INTO torrents (ID,Seeders,Leechers,Snatched,Balance) VALUES " + update_torrent_buffer +
+	sql = "INSERT INTO torrents (id,seeders,leechers,times_completed,balance) VALUES " + update_torrent_buffer +
 		" ON DUPLICATE KEY UPDATE Seeders=VALUES(Seeders), Leechers=VALUES(Leechers), " +
-		"Snatched=Snatched+VALUES(Snatched), Balance=VALUES(Balance), last_action = " +
-		"IF(VALUES(Seeders) > 0, NOW(), last_action)";
+		"times_completed=times_completed+VALUES(times_completed), balance=VALUES(balance), last_action = " +
+		"IF(VALUES(seeders) > 0, NOW(), last_action)";
 	torrent_queue.push(sql);
 	update_torrent_buffer.clear();
 	sql.clear();
